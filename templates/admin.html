@@ -1,0 +1,370 @@
+
+{% extends "base.html" %}
+
+{% block title %}Admin Command Center — FoodMind AI{% endblock %}
+
+{% block content %}
+
+<div class="admin-head">
+    <div>
+        <div class="eyebrow">SYSTEM CONTROL / ADMIN</div>
+        <h1>Command <span class="gradient-text">center.</span></h1>
+        <p class="muted">
+            Monitor orders, menu availability, and sales performance.
+        </p>
+    </div>
+
+    <span class="live-pill">
+        <span class="pulse"></span>
+        SYSTEM ONLINE
+    </span>
+</div>
+
+<!-- Dashboard Statistics -->
+<div class="stats-grid">
+
+    <div class="stat-card">
+        <small>TOTAL ORDERS</small>
+        <strong>{{ stats.orders }}</strong>
+        <span>All-time order count</span>
+    </div>
+
+    <div class="stat-card">
+        <small>GROSS REVENUE</small>
+        <strong>₹{{ '%.2f'|format(stats.revenue|default(0, true)|float) }}</strong>
+        <span>Excludes cancelled orders</span>
+    </div>
+
+    <div class="stat-card">
+        <small>CUSTOMERS</small>
+        <strong>{{ stats.customers }}</strong>
+        <span>Registered accounts</span>
+    </div>
+
+    <div class="stat-card">
+        <small>MENU ITEMS</small>
+        <strong>{{ stats.foods }}</strong>
+        <span>Available and hidden</span>
+    </div>
+
+</div>
+
+<!-- Main Admin Dashboard -->
+<div class="admin-grid">
+
+    <!-- Add Food Form -->
+    <section class="panel">
+
+        <div class="panel-heading">
+            <div>
+                <div class="eyebrow">CATALOG CONTROL</div>
+                <h2>Add a food item</h2>
+            </div>
+        </div>
+
+        <form
+            method="post"
+            action="{{ url_for('admin_add_food') }}"
+            class="admin-food-form"
+        >
+
+            <label>
+                Food name
+                <input
+                    type="text"
+                    name="name"
+                    placeholder="Enter food name"
+                    required
+                >
+            </label>
+
+            <label>
+                Price (₹)
+                <input
+                    type="number"
+                    name="price"
+                    min="0"
+                    step="0.01"
+                    placeholder="Enter price"
+                    required
+                >
+            </label>
+
+            <label>
+                Category
+                <input
+                    type="text"
+                    name="category"
+                    value="Main Course"
+                    required
+                >
+            </label>
+
+            <label>
+                Image URL
+                <input
+                    type="url"
+                    name="image_url"
+                    placeholder="https://example.com/food.jpg"
+                >
+            </label>
+
+            <label class="wide">
+                Description
+                <input
+                    type="text"
+                    name="description"
+                    placeholder="Describe the dish"
+                >
+            </label>
+
+            <label>
+                Tags
+                <input
+                    type="text"
+                    name="tags"
+                    placeholder="spicy,comfort,quick"
+                >
+            </label>
+
+            <label>
+                Spice level
+                <select name="spice_level">
+                    <option value="1">Mild</option>
+                    <option value="2">Medium</option>
+                    <option value="3">Hot</option>
+                </select>
+            </label>
+
+            <label class="check-label">
+                <input
+                    type="checkbox"
+                    name="is_veg"
+                    checked
+                >
+                Vegetarian
+            </label>
+
+            <button type="submit" class="btn primary">
+                Add to menu +
+            </button>
+
+        </form>
+
+    </section>
+
+    <!-- Popular Dishes and Revenue -->
+    <section class="panel">
+
+        <div class="panel-heading">
+            <div>
+                <div class="eyebrow">BEST SELLERS</div>
+                <h2>Popular dishes</h2>
+            </div>
+        </div>
+
+        {% for p in popular %}
+        <div class="popular-row">
+
+            <div>
+                <b>{{ p.food_name }}</b>
+                <small>{{ p.qty }} units sold</small>
+            </div>
+
+            <strong>
+                ₹{{ '%.2f'|format(p.sales|float) }}
+            </strong>
+
+        </div>
+        {% else %}
+        <p class="muted">Sales data appears after orders.</p>
+        {% endfor %}
+
+        <div class="panel-heading daily-head">
+            <div>
+                <div class="eyebrow">REVENUE PULSE</div>
+                <h2>Recent days</h2>
+            </div>
+        </div>
+
+        {% set max_revenue = daily|map(attribute='revenue')|max if daily else 1 %}
+        {% set max_revenue = max_revenue|float %}
+
+        {% for d in daily %}
+        <div class="bar-row">
+
+            <span>{{ d.day }}</span>
+
+            <div class="bar-track">
+                <div
+                    class="bar-fill"
+                    style="width: {{ (((d.revenue|float) / (max_revenue if max_revenue > 0 else 1)) * 100)|round|int }}%;"
+            </div>
+
+            <b>₹{{ '%.2f'|format(d.revenue|float) }}</b>
+
+        </div>
+        {% else %}
+        <p class="muted">No revenue yet.</p>
+        {% endfor %}
+
+    </section>
+
+</div>
+
+<!-- Latest Orders -->
+<section class="panel admin-table-section">
+
+    <div class="panel-heading">
+        <div>
+            <div class="eyebrow">ORDER OPERATIONS</div>
+            <h2>Latest orders</h2>
+        </div>
+    </div>
+
+    <div class="table-wrap">
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Order</th>
+                    <th>Customer</th>
+                    <th>Placed</th>
+                    <th>Total</th>
+                    <th>Status / update</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for o in orders %}
+                <tr>
+
+                    <td>#{{ o.id }}</td>
+
+                    <td>
+                        {{ o.customer_name }}
+                        <small class="table-sub">
+                            {{ o.email }}
+                        </small>
+                    </td>
+
+                    <td>{{ o.created_at }}</td>
+
+                    <td>
+                        ₹{{ '%.2f'|format(o.total|float) }}
+                    </td>
+
+                    <td>
+                        <form
+                            class="status-form"
+                            method="post"
+                            action="{{ url_for('admin_update_order', order_id=o.id) }}"
+                        >
+
+                            <select name="status" required>
+                                {% for s in statuses %}
+                                <option
+                                    value="{{ s }}"
+                                    {% if o.status == s %}selected{% endif %}
+                                >
+                                    {{ s }}
+                                </option>
+                                {% endfor %}
+                            </select>
+
+                            <button
+                                type="submit"
+                                class="btn ghost tiny"
+                            >
+                                Save
+                            </button>
+
+                        </form>
+                    </td>
+
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5">No orders yet.</td>
+                </tr>
+                {% endfor %}
+
+            </tbody>
+        </table>
+
+    </div>
+
+</section>
+
+<!-- Menu Availability -->
+<section class="panel admin-table-section">
+
+    <div class="panel-heading">
+        <div>
+            <div class="eyebrow">MENU INVENTORY</div>
+            <h2>Availability control</h2>
+        </div>
+    </div>
+
+    <div class="table-wrap">
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Food</th>
+                    <th>Category</th>
+                    <th>Price</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for f in foods %}
+                <tr>
+
+                    <td>{{ f.name }}</td>
+
+                    <td>{{ f.category }}</td>
+
+                    <td>
+                        ₹{{ '%.2f'|format(f.price|float) }}
+                    </td>
+
+                    <td>
+                        <span class="status">
+                            {{ 'Available' if f.available else 'Hidden' }}
+                        </span>
+                    </td>
+
+                    <td>
+                        <form
+                            method="post"
+                            action="{{ url_for('admin_toggle_food', food_id=f.id) }}"
+                        >
+                            <button
+                                type="submit"
+                                class="btn ghost tiny"
+                            >
+                                {{ 'Hide' if f.available else 'Enable' }}
+                            </button>
+                        </form>
+                    </td>
+
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5">No food items found.</td>
+                </tr>
+                {% endfor %}
+
+            </tbody>
+        </table>
+
+    </div>
+
+</section>
+
+{% endblock %}

@@ -1,0 +1,9 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% block title %}FoodMind AI{% endblock %}</title><link rel="stylesheet" href="{{ url_for('static',filename='style.css') }}"></head>
+<body><div class="ambient ambient-a"></div><div class="ambient ambient-b"></div>
+<header class="topbar"><a class="brand" href="{{ url_for('index') }}"><span class="brand-icon">✦</span> FOODMIND<span class="ai">.AI</span></a>
+<nav><a href="{{ url_for('index') }}">Explore</a><a href="{{ url_for('recommendations') }}">AI Picks</a><a href="{{ url_for('budget') }}">Budget Lab</a>
+{% if session.get('user_id') %}<a href="{{ url_for('orders') }}">My Orders</a><a href="{{ url_for('rewards') }}">Rewards</a>{% if session.get('is_admin') %}<a href="{{ url_for('admin_dashboard') }}">Admin</a>{% endif %}<a href="{{ url_for('logout') }}">Logout</a>{% else %}<a href="{{ url_for('login') }}">Sign in</a><a class="nav-cta" href="{{ url_for('register') }}">Join free</a>{% endif %}<a class="cart-link" href="{{ url_for('cart') }}">Cart <b>{{ cart_count }}</b></a></nav></header>
+<main class="container">{% with messages=get_flashed_messages(with_categories=true) %}{% if messages %}<div class="flash-stack">{% for category,message in messages %}<div class="flash {{ category }}">{{ message }}</div>{% endfor %}</div>{% endif %}{% endwith %}
+{% block content %}{% endblock %}</main><footer><span>✦ FoodMind AI</span><span>Smart cravings. Smarter choices.</span><span>Demo ordering experience</span></footer></body></html>
